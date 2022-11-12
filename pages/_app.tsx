@@ -3,17 +3,16 @@ import './global.css';
 import '@rainbow-me/rainbowkit/styles.css';
 import type { AppProps } from 'next/app';
 import Script from 'next/script';
-
 import {
   RainbowKitProvider,
-  Theme,
-  getDefaultWallets,
-  connectorsForWallets,
-  configureChains,
-  apiProvider,
-  wallet,
+  getDefaultWallets
 } from '@rainbow-me/rainbowkit';
-import { chain, createClient, Provider as WagmiProvider } from 'wagmi';
+import type {
+  Theme
+} from '@rainbow-me/rainbowkit';
+import { alchemyProvider } from 'wagmi/providers/alchemy';
+import { publicProvider } from 'wagmi/providers/public';
+import { chain, configureChains, createClient, WagmiConfig } from 'wagmi';
 import { isMobile } from 'react-device-detect';
 
 let sysFont = '';
@@ -24,17 +23,20 @@ if (isMobile) {
 }
 
 const customTheme: Theme = {
+  blurs: {
+    modalOverlay: '',
+  },
   colors: {
-    accentColor: 'linear-gradient(to right, #3898FF, #7A70FF);',
+    accentColor: 'linear-gradient(60deg, rgba(231,126,93,1) 0%, rgba(120,55,101,1) 100%);',
     accentColorForeground: 'white',
     actionButtonBorder: 'none',
     actionButtonBorderMobile: 'none',
     actionButtonSecondaryBackground: 'white',
     closeButton: 'black',
     closeButtonBackground: 'white',
-    connectButtonBackground: 'linear-gradient(to right, #3898FF, #7A70FF);',
+    connectButtonBackground: 'linear-gradient(60deg, rgba(231,126,93,1) 0%, rgba(120,55,101,1) 100%);',
     connectButtonBackgroundError: 'red',
-    connectButtonInnerBackground: 'linear-gradient(to right, #3898FF, #7A70FF);',
+    connectButtonInnerBackground: 'linear-gradient(60deg, rgba(231,126,93,1) 0%, rgba(120,55,101,1) 100%);',
     connectButtonText: 'white',
     connectButtonTextError: 'white',
     connectionIndicator: 'red',
@@ -71,51 +73,39 @@ const customTheme: Theme = {
     selectedOption: '',
     selectedWallet: '',
     walletLogo: '',
-  },
+  }
 };
 
-const { chains, provider, webSocketProvider } = configureChains(
+const { chains, provider } = configureChains(
   [
-    chain.mainnet,
-    ...(process.env.NEXT_PUBLIC_ENABLE_MAINNET === 'true'
-      ? [chain.mainnet]
-      : []),
+    chain.goerli
   ],
   [
-    apiProvider.alchemy('jQaMsLpDMAZQ_xkPux8jQ42ZSMzgmo_-'),
-    apiProvider.fallback(),
+    alchemyProvider({ alchemyId: process.env.NEXT_PUBLIC_ALCHEMY_ID }),
+    publicProvider()
   ]
 );
 
-const { wallets } = getDefaultWallets({
-  appName: 'Bored ENS Yacht Club',
+const { connectors } = getDefaultWallets({
+  appName: '100k ENS Cats',
   chains,
 });
 
 const appInfo = {
-  appName: 'Bored ENS Yacht Club (BENSYC)',
+  appName: '100k ENS Cats (100kCat.eth)',
 };
-
-const connectors = connectorsForWallets([
-  ...wallets,
-  {
-    groupName: 'Other',
-    wallets: [wallet.argent({ chains }), wallet.trust({ chains })],
-  },
-]);
 
 const wagmiClient = createClient({
   autoConnect: true,
   connectors,
-  provider,
-  webSocketProvider,
+  provider
 });
 
 function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <>
-      <WagmiProvider client={wagmiClient}>
+      <WagmiConfig client={wagmiClient}>
         <RainbowKitProvider
           appInfo={appInfo}
           chains={chains}
@@ -123,7 +113,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         >
           <Component {...pageProps} />
         </RainbowKitProvider>
-      </WagmiProvider>
+      </WagmiConfig>
     </>
   );
 }

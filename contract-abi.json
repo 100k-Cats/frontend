@@ -10,15 +10,21 @@
         "internalType": "uint256",
         "name": "_maxSupply",
         "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_startTime",
-        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "digits",
+        "type": "string"
+      }
+    ],
+    "name": "DigitNotAvailable",
+    "type": "error"
   },
   {
     "inputs": [
@@ -29,6 +35,28 @@
       }
     ],
     "name": "ERC721IncompatibleReceiver",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string[]",
+        "name": "list",
+        "type": "string[]"
+      }
+    ],
+    "name": "IllegalBatch",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "digits",
+        "type": "string"
+      }
+    ],
+    "name": "IllegalENS",
     "type": "error"
   },
   {
@@ -69,6 +97,22 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "NotOnWhitelist",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "digits",
+        "type": "string"
+      }
+    ],
+    "name": "NotOwnerOfENS",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -103,11 +147,6 @@
       }
     ],
     "name": "OnlyDev",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "OversizedBatch",
     "type": "error"
   },
   {
@@ -299,31 +338,12 @@
         "type": "uint256"
       }
     ],
-    "name": "ID2Labelhash",
+    "name": "ID2Label",
     "outputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "string",
         "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "id",
-        "type": "uint256"
-      }
-    ],
-    "name": "ID2Namehash",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
+        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -359,6 +379,19 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "add",
+        "type": "address[]"
+      }
+    ],
+    "name": "addToWhitelist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -401,14 +434,33 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "batchSize",
-        "type": "uint256"
+        "internalType": "string[]",
+        "name": "_list",
+        "type": "string[]"
       }
     ],
     "name": "batchMint",
     "outputs": [],
     "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "bigBatch",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -494,7 +546,13 @@
     "type": "function"
   },
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "digits",
+        "type": "string"
+      }
+    ],
     "name": "mint",
     "outputs": [],
     "stateMutability": "payable",
@@ -560,12 +618,38 @@
   },
   {
     "inputs": [],
+    "name": "phase",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address[]",
+        "name": "remove",
+        "type": "address[]"
+      }
+    ],
+    "name": "removeFromWhitelist",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "royalty",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "uint16",
         "name": "",
-        "type": "uint256"
+        "type": "uint16"
       }
     ],
     "stateMutability": "view",
@@ -716,27 +800,27 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_royalty",
-        "type": "uint256"
+        "internalType": "uint8",
+        "name": "value",
+        "type": "uint8"
       }
     ],
-    "name": "setRoyalty",
+    "name": "setPhase",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "startTime",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
+        "internalType": "uint16",
+        "name": "_royalty",
+        "type": "uint16"
       }
     ],
-    "stateMutability": "view",
+    "name": "setRoyalty",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -844,6 +928,25 @@
     "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "whitelist",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {

@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from 'react-dom';
 import styled from 'styled-components';
 
-const Modal = ({ show, onClose, children, title }) => {
+const Preview = ({ show, onClose, title, children }) => {
   const [browser, setBrowser] = React.useState(false);
 
   React.useEffect(() => {
@@ -22,8 +22,24 @@ const Modal = ({ show, onClose, children, title }) => {
             close
           </a>
         </StyledModalHeader>
-        {title && <StyledModalTitle>{title}</StyledModalTitle>}
-        <StyledModalBody>{children}</StyledModalBody>
+        {title && <StyledModalTitle>{title}.100kcat.eth</StyledModalTitle>}
+        <StyledModalBody>
+          <div style={{ marginTop: '0px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
+              <img
+                style={{ borderRadius: '3px', border: 'solid', borderWidth: '1px' }}
+                alt="preview"
+                onError={({ currentTarget }) => {
+                  currentTarget.onerror = null;
+                  currentTarget.src="322.svg";
+                }}
+                src={children}
+                width="450"
+                height="450"
+                />
+            </div>
+          </div>
+        </StyledModalBody>
       </StyledModal>
     </StyledModalOverlay>
   ) : null;
@@ -39,10 +55,10 @@ const Modal = ({ show, onClose, children, title }) => {
 };
 
 const StyledModalBody = styled.div`
-  padding-top: 10px;
+  padding-top: 30px;
   padding-left: 20px;
-  padding-right: 40px;
-  padding-bottom: 20px;
+  padding-right: 20px;
+  padding-bottom: 0px;
   display: flex;
   justify-content: center;
   height: 500px;
@@ -51,11 +67,12 @@ const StyledModalBody = styled.div`
 
 const StyledModalTitle = styled.div`
   padding-top: 20px;
-  font-size: 22px;
+  font-size: 20px;
   display: flex;
   justify-content: center;
   font-weight: 800;
-  margin-bottom: 20px;
+  margin-bottom: 0px;
+  font-family: 'MajorMono';
 `;
 
 const StyledModalHeader = styled.div`
@@ -71,7 +88,7 @@ const StyledModal = styled.div`
   border-radius: 6px;
   padding: 15px;
   overflow-y: initial !important
-  padding-bottom: 20px;
+  padding-bottom: 0px;
 `;
 
 const StyledModalOverlay = styled.div`
@@ -83,7 +100,7 @@ const StyledModalOverlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.05);
 `;
 
-export default Modal;
+export default Preview;

@@ -1,0 +1,35 @@
+diff --git a/node_modules/@rainbow-me/rainbowkit/dist/chunk-3HHDKJZM.js b/node_modules/@rainbow-me/rainbowkit/dist/chunk-3HHDKJZM.js
+index 09bb896..548a5d1 100644
+--- a/node_modules/@rainbow-me/rainbowkit/dist/chunk-3HHDKJZM.js
++++ b/node_modules/@rainbow-me/rainbowkit/dist/chunk-3HHDKJZM.js
+@@ -2591,7 +2591,7 @@ function ConnectDetail({
+     readyMsg = `${name} is not available on this device`;
+   }
+   const secondaryAction = showWalletConnectModal ? {
+-    description: "Need the official WalletConnect modal?",
++    description: "Need official WalletConnect modal?",
+     label: "OPEN",
+     onClick: showWalletConnectModal
+   } : qrCode ? {
+@@ -2918,7 +2918,7 @@ function DesktopOptions({ onClose }) {
+         reconnect: connectToWallet,
+         wallet: selectedWallet
+       });
+-      headerLabel = hasQrCode && `Scan with ${selectedWallet.name === "WalletConnect" ? "your phone" : selectedWallet.name}`;
++      headerLabel = hasQrCode && `Scan with ${selectedWallet.name === "Wallet Connect" ? "your phone" : selectedWallet.name}`;
+       break;
+     case "DOWNLOAD" /* Download */:
+       walletContent = selectedWallet && /* @__PURE__ */ React42.createElement(DownloadDetail, {
+diff --git a/node_modules/@rainbow-me/rainbowkit/dist/index.js b/node_modules/@rainbow-me/rainbowkit/dist/index.js
+index a199c0d..fe9fb03 100644
+--- a/node_modules/@rainbow-me/rainbowkit/dist/index.js
++++ b/node_modules/@rainbow-me/rainbowkit/dist/index.js
+@@ -478,7 +478,7 @@ var trust = ({ chains }) => ({
+ // src/wallets/walletConnectors/walletConnect/walletConnect.ts
+ var walletConnect = ({ chains }) => ({
+   id: "walletConnect",
+-  name: "WalletConnect",
++  name: "Wallet Connect",
+   iconUrl: async () => (await import("./walletConnect-WGMZ526J.js")).default,
+   iconBackground: "#3b99fc",
+   createConnector: () => {
