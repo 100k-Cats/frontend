@@ -20,7 +20,7 @@ const Faq = ({ show, onClose, fontsize }) => {
       <StyledModal>
         <StyledModalHeader>
           <a href="#" onClick={handleCloseClick}>
-            close
+            x
           </a>
         </StyledModalHeader>
         {title && <StyledModalTitle>{title}</StyledModalTitle>}
@@ -152,7 +152,7 @@ const StyledModalOverlay = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.75);
 `;
 
 export default Faq;

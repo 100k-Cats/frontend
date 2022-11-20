@@ -25,7 +25,7 @@ module.exports = withImages();
 module.exports = {
   reactStrictMode: true,
   externals: {
-    FileReader: "FileReader",
+    FileReader: "FileReader"
   },
 
   webpack5: true,

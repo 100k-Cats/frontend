@@ -54,10 +54,12 @@ const Home: NextPage = () => {
   const [digits, setDigits] = React.useState<string[]>([]);
   const [subs, setSubs] = React.useState<string[]>([]);
   const [mintDigits, setMintDigits] = React.useState<string[]>([]);
-  const [online, setOnline] = React.useState(false);
   const [empty, setEmpty] = React.useState(false);
   const [check, setCheck] = React.useState(false);
-  const [show, setShow] = React.useState('');
+  const [show, setShow] = React.useState('0');
+  const [tokenID, setTokenID] = React.useState('');
+  const [traits, setTraits] = React.useState<any[]>([]);
+  const [meta, setMeta] = React.useState<any[]>([]);
 
   // gas estimates
   const gasEstimate = 185000;
@@ -74,7 +76,6 @@ const Home: NextPage = () => {
     edgeMargin = 0; fontSizeFAQ = '11px';
   }
 
-  var columns = 0;
   const logToken = useCallback(async () => {
     const nfts = await alchemy.nft.getNftsForOwner(wallet);
     const allTokens = nfts.ownedNfts;
@@ -84,7 +85,24 @@ const Home: NextPage = () => {
       if (allTokens[i].contract.address === ensRegistrar
         && /^\d+$/.test(allTokens[i].title.split('.')[0])
         && allTokens[i].title.split('.eth')[0].length === 5) {
-          allENS.push(allTokens[i].title.split('.eth')[0]);
+          fetch(`https://ipfs.io/ipfs/${process.env.NEXT_PUBLIC_IPFS_JSON}/${allTokens[i].title.split('.eth')[0]}.json`)
+            .then(function(response) {
+              if (response.ok) {
+                return response.json();
+              } else {
+                return { attributes: []};
+              }
+            })
+            .then(function(json) {
+              if (json) {
+                allENS.push(allTokens[i].title.split('.eth')[0]);
+                let attr = traits;
+                if (attr.filter(item => item.name === allTokens[i].title.split('.eth')[0]).length === 0) {
+                  attr.push({ name: allTokens[i].title.split('.eth')[0], traits: json.attributes});
+                  setTraits(attr);
+                }
+              }
+            });
       } else if (allTokens[i].contract.address === contractConfig.addressOrName.toLowerCase()) {
           fetch(allTokens[i].tokenUri!.gateway)
             .then(function(response) {
@@ -107,9 +125,19 @@ const Home: NextPage = () => {
        }
     }
     setSubs(allSub);
-    if (allENS.length == 0) { setEmpty(true); setCheck(true); }
+    if (allENS.length == 0) {
+      setEmpty(true);
+      setCheck(true);
+    }
     setDigits(allENS);
-  }, [wallet]);
+  }, [wallet, traits]);
+
+  React.useEffect(() => {
+    if (traits) {
+      let ens = traits.filter(item => item.name === show);
+      setMeta(ens[0]?.traits);
+    }
+  }, [show, traits]);
 
   const findToken = useCallback(async () => {
     if (wallet) {
@@ -125,7 +153,7 @@ const Home: NextPage = () => {
   const { data: totalSupply } = useContractRead(
     contractConfig,
     'totalSupply',
-    { watch: true }
+    { watch: false }
   );
 
   const bigBatch = [5, 3, 3];
@@ -134,7 +162,15 @@ const Home: NextPage = () => {
     'phase',
     { watch: false }
   );
-  //console.log(bigBatch[parseInt(phase) - 1])
+
+  const { data: namehash2ID } = useContractRead(
+    contractConfig,
+    'Namehash2ID',
+    {
+      args: ethers.utils.keccak256(ethers.utils.defaultAbiCoder.encode([ "string", "string", "string" ], [ "eth", "100kcat", show ]))
+    }
+  )
+
   React.useEffect(() => {
     if (totalSupply) {
       setTotalMinted(totalSupply.toNumber());
@@ -146,23 +182,17 @@ const Home: NextPage = () => {
       setDigits([]); setMintDigits([]); setBatchSize(0);
       setWallet(accountData.address ? accountData.address : '');
     } else {
-      setDigits([]); setMintDigits([]); setOnline(false);
+      setDigits([]); setMintDigits([]);
     }
-    if (isConnected) {
-      setOnline(isConnected);
-    } else {
-      setOnline(false);
-    }
-  }, [accountData, isConnected]);
+  }, [accountData]);
 
   React.useEffect(() => {
     findToken();
-    if (isConnected) {
-      setOnline(isConnected);
-    } else {
-      setOnline(false);
-    }
-  }, [wallet, findToken, isConnected]);
+  }, [wallet, isConnected, findToken]);
+
+  React.useEffect(() => {
+    setTokenID(namehash2ID);
+  }, [show]);
 
   const startOn = 'November 4, 2022 12:00:00 UTC'
   const deadline = new Date(startOn).getTime();
@@ -226,24 +256,7 @@ const Home: NextPage = () => {
       const jsonFiles: string[] = [];
       const htmlFiles: string[] = [];
       setPinning(true);
-      for (let i = 0; i < batchSize; i++) {
-        setCount(i + 1);
-        jsonFiles.push(`${totalMinted + i}.100kcat.eth`);
-        setHash(`${totalMinted + i}.100kcat.eth`);
-      }
-
-      if (batchSize === 1 && jsonFiles.length === 1) {
-        setHashCount(jsonFiles.length);
-        setCount(0);
-      } else if (batchSize > 1 && batchSize < 5 && jsonFiles.length === batchSize) {
-        setHashCount(jsonFiles.length);
-        setCount(0);
-      } else {
-        setHashCount(0);
-        setCount(0);
-        setHash('');
-        window.alert('❌❌❌');
-      }
+      setHashCount(batchSize);
     }
 
   var array = mintDigits;
@@ -252,6 +265,12 @@ const Home: NextPage = () => {
     let index = array.indexOf(e.target.id);
     if (isChecked && !isMinted && !isBatchMinted) {
       array.push(e.target.id);
+      if (array.length > bigBatch[Number(phase) - 1]) {
+        array.splice(index, 1);
+        const ele = document.getElementById(e.target.id) as HTMLInputElement;
+        ele!.checked = false;
+        window.alert(`Maximum ${bigBatch[Number(phase) - 1]} per transaction allowed ❗❗❗`);
+      }
     } else {
       if (index > -1 && !isMinted && !isBatchMinted) {
         array.splice(index, 1);
@@ -259,7 +278,17 @@ const Home: NextPage = () => {
     }
     setMintDigits(array);
     setBatchSize(mintDigits.length);
+    setHashCount(0);
+    setPinning(false);
   };
+
+  const modalItem = [
+    'phase <span style="color: white">1</span> starts <span style="color: white; font-size: 25px;">december 15 2022 12:00 utc</span>',
+    'if you are a <span style="color: white">5-digit ens holder</span>, please connect with your wallet to mint a cat',
+    '<span style="color: white">only 5-digit holders</span> can claim their cat in <span style="color: white">phase 1</span>',
+    'you must connect with the <span style="color: white">wallet that owns</span> the 5-digit ens',
+    'if you own multiple 5-digit ens, then you can mint up to <span style="color: white">50</span> per transaction'
+  ];
 
   return (
     <div className="page" style = {{ maxWidth: `${widthPage}` }}>
@@ -298,7 +327,7 @@ const Home: NextPage = () => {
                   <h1 style={{ fontSize: 50 }}>100k ENS Cats</h1>
               )}
               { isMobile && (
-                  <h1 style={{ fontSize: 20 }}>100k ENS Cats</h1>
+                  <h1 style={{ fontSize: 32 }}>100k ENS Cats</h1>
               )}
             </div>
 
@@ -307,52 +336,31 @@ const Home: NextPage = () => {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'center', textAlign: 'center' }}>
                   <p className="head" style={{ marginTop: '10px', marginBottom: '30px' }}>
-                    <span style= {{ fontFamily: 'SFMono', color: 'blue' }}>{totalMinted}</span> minted so far!
+                    minted <span style= {{ fontFamily: 'RobotoMono', color: 'white', fontWeight: '600' }}>{totalMinted}</span> so far<span style= {{ fontFamily: 'MajorMono', color: 'blue', fontWeight: '600' }}>{' '}</span>
                   </p>
                 </div>
               </div>
             )}
 
-            {startMint && !online && (
-              <div>
+            {startMint && !isConnected && (
+              <div style={{ marginBottom: '-30px' }}>
                 <div className="content-slider"><div className="slider">
                   <div className="mask">
                        <ul>
-                         <li className="anim1">
-                         <div style={{ display: 'flex', justifyContent: 'center', textAlign: 'center' }}>
-                           <p className="bold" style={{ maxWidth: '350px' }}>
-                             if you are a <span style={{ color: 'blue' }}>5-digit ens holder</span>, please connect with your wallet to mint a cat
-                           </p>
-                         </div>
-                         </li>
-                         <li className="anim2">
-                         <div style={{ display: 'flex', justifyContent: 'center', textAlign: 'center' }}>
-                           <p className="bold" style={{ maxWidth: '350px' }}>
-                             <span style={{ color: 'blue' }}>only 5-digit holders</span> can claim their cat in <span style={{ color: 'blue' }}>phase 1</span>
-                           </p>
-                         </div>
-                         </li>
-                         <li className="anim3">
-                         <div style={{ display: 'flex', justifyContent: 'center', textAlign: 'center' }}>
-                           <p className="bold" style={{ maxWidth: '350px' }}>
-                             you must connect with the <span style={{ color: 'blue' }}>wallet that owns</span> the 5-digit ens
-                           </p>
-                         </div>
-                         </li>
-                         <li className="anim4">
-                         <div style={{ display: 'flex', justifyContent: 'center', textAlign: 'center' }}>
-                           <p className="bold" style={{ maxWidth: '350px' }}>
-                             if you own more than one 5-digit ens in your wallet, you can mint up to <span style={{ color: 'blue' }}>50</span> per transaction
-                           </p>
-                         </div>
-                         </li>
+                         {modalItem.map((item, index) => (
+                           <li className={`anim${index + 1}`} key={index}>
+                             <div className="home-modal-item">
+                               <div dangerouslySetInnerHTML={{ __html: item }} />
+                             </div>
+                           </li>
+                         ))}
                        </ul>
                   </div>
                 </div></div>
               </div>
             )}
 
-            {online && !check && digits.length === 0 && (
+            {isConnected && !check && digits.length === 0 && (
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <button
                   className="button"
@@ -363,9 +371,10 @@ const Home: NextPage = () => {
               </div>
             )}
 
-            {online && check && empty && digits.length === 0 && (
+            {isConnected && check && empty && digits.length === 0 && (
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <button
+                  disabled
                   className="button"
                   data-mint-loading
                   >
@@ -373,9 +382,8 @@ const Home: NextPage = () => {
                 </button>
               </div>
             )}
-
             {/* Show ENS */}
-            {online && digits.length > 0 && (
+            {isConnected && digits.length > 0 && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'center', textAlign: 'center' }}>
                   <p style={{ marginTop: '5px' }}>
@@ -388,7 +396,9 @@ const Home: NextPage = () => {
                     {digits.filter(x => !subs.includes(x)).map((digit) => (
                       <div key={digit}>
                         <label className="ccontainer" key={digit}>
-                          {digit}.eth
+                          <span>{digit}</span>
+                          .
+                          <span style={{ fontSize: '16px', fontFamily: 'Bioliquid' }}>ETH</span>
                           <input
                             type="checkbox"
                             id={digit}
@@ -398,25 +408,31 @@ const Home: NextPage = () => {
                           />
                           <span className="checkmark"></span>
                           <button
+                            data-title="click to view"
                             className="small"
                             onClick={() => {window.scrollTo(0,0); setShow(digit); setPreviewModal(true)}}
                             style={{ marginRight: 0 }}
                             >
-                            {'ℹ️'}
+                            {'🔍'}
                           </button>
                           <Preview
                             onClose={() => setPreviewModal(false)}
                             show={previewModal && show}
                             title={show}
-                          >{`https://ipfs.io/ipfs/QmWqJooF1Y6YesTSQzTrm7F4rT9riVSzm2YWxFrxWPYAdi/${show}.png`}
+                            json={meta}
+                            minted={"false"}
+                            png={`https://ipfs.io/ipfs/${process.env.NEXT_PUBLIC_IPFS_PNG}/${show}.png`}
+                          >{show}
                           </Preview>
                         </label>
                       </div>
                     ))}
                     {digits.filter(x => subs.includes(x)).map((digit) => (
                       <div key={digit}>
-                        <label className="ccontainer" key={digit} style={{ textDecoration: 'line-through' }}>
-                          {digit}.eth
+                        <label className="ccontainer" key={digit} style={{ color: 'rgba(255,255,255,0.7)' }}>
+                          <span style={{ textDecoration: 'line-through' }}>{digit}</span>
+                          .
+                          <span style={{ textDecoration: 'none', fontSize: '16px', fontFamily: 'Bioliquid' }}>ETH</span>
                           <input
                             type="checkbox"
                             id={digit}
@@ -425,6 +441,7 @@ const Home: NextPage = () => {
                           />
                           <span className="xheckmark"></span>
                           <button
+                            data-title="click to view"
                             className="small"
                             onClick={() => {window.scrollTo(0,0); setShow(digit); setPreviewModal(true)}}
                             style={{ marginRight: 0 }}
@@ -435,7 +452,10 @@ const Home: NextPage = () => {
                             onClose={() => setPreviewModal(false)}
                             show={previewModal && show}
                             title={show}
-                          >{`https://ipfs.io/ipfs/QmWqJooF1Y6YesTSQzTrm7F4rT9riVSzm2YWxFrxWPYAdi/${show}.png`}
+                            json={meta}
+                            minted={`${contractConfig.addressOrName}/${tokenID}`}
+                            png={`https://ipfs.io/ipfs/${process.env.NEXT_PUBLIC_IPFS_PNG}/${show}.png`}
+                          >{show}
                           </Preview>
                         </label>
                       </div>
@@ -464,7 +484,7 @@ const Home: NextPage = () => {
             <br></br>
 
             {/* Gas Data */}
-            {value > 0 && gasData && (batchSize > 0 && batchSize < 5) && !isError && !isLoading && (
+            {isConnected && value > 0 && gasData && (batchSize > 0 && batchSize <= bigBatch[Number(phase) - 1]) && !isError && !isLoading && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'center', textAlign: 'center' }}>
                   <p
@@ -573,7 +593,7 @@ const Home: NextPage = () => {
             )}
 
             {/* Batch Mint */}
-            {isConnected && hashCount === 0 && !isBatchMinted && 12 >= batchSize && batchSize >= 2 && (
+            {isConnected && hashCount === 0 && !isBatchMinted && bigBatch[Number(phase) - 1] >= batchSize && batchSize >= 2 && (
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <button
                   disabled={isPinning}
@@ -589,7 +609,7 @@ const Home: NextPage = () => {
               </div>
             )}
 
-            {isConnected && hashCount === batchSize && !isBatchMinted && 12 >= batchSize && batchSize >= 2 && (
+            {isConnected && hashCount === batchSize && !isBatchMinted && bigBatch[Number(phase) - 1] >= batchSize && batchSize >= 2 && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
                   <button
@@ -684,7 +704,7 @@ const Home: NextPage = () => {
           )}
 
           {/* Batch Mint Result */}
-          {isBatchMinted && 12 >= batchSize && batchSize >= 2 && (
+          {isBatchMinted && bigBatch[Number(phase) - 1] >= batchSize && batchSize >= 2 && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'center', textAlign: 'center' }}>
                 <p
@@ -718,7 +738,7 @@ const Home: NextPage = () => {
               </div>
             </div>
           )}
-
+          <br></br><br></br>
           {/* Footer */}
           <div style={{ marginTop: -10, marginBottom: 20, alignItems: 'center', justifyContent: 'center', display: 'flex' }}>
             <button
